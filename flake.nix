@@ -3,16 +3,14 @@
 
   inputs.nixpkgs.url = "nixpkgs/nixos-unstable";
 
-  outputs = { self, nixpkgs }: {
-    packages.x86_64-linux.cloudflare-dns-updater = let
-      pkgs = import nixpkgs {
-        system = "x86_64-linux";
-      };
-    in pkgs.rustPlatform.buildRustPackage rec {
+  outputs = { self, nixpkgs }: let
+    pkgs = import nixpkgs { system = "x86_64-linux"; };
+    lib = pkgs.lib;
+  in {
+    packages.x86_64-linux.cloudflare-dns-updater = pkgs.rustPlatform.buildRustPackage rec {
       pname = "cloudflare-dns-updater";
       version = "0.2.0";
 
-      # Replace with your GitHub repo details
       src = pkgs.fetchFromGitHub {
         owner = "Carrybooo";
         repo = "cloudflare-dns-updater";
@@ -29,7 +27,7 @@
 
       cargoHash = "sha256-kw24pr0xzyOmAfh/2nHwWy7oCycdWUPf0MAsPeTxNx0=";
 
-      meta = with pkgs.lib; {
+      meta = with lib; {
         description = "A DNS updater written in Rust";
         homepage = "https://github.com/Carrybooo/cloudflare-dns-updater";
         license = licenses.mit;
@@ -37,9 +35,7 @@
     };
 
     nixosModules.cloudflare-dns-updater = {
-      options = let
-        lib = nixpkgs.lib;
-      in{
+      options = {
         cloudflare-dns-updater = {
           enable = lib.mkOption {
             type = lib.types.bool;
@@ -61,14 +57,16 @@
         };
       };
 
-      config = { config, pkgs, ... }: {
+      config = { config, pkgs, lib, ... }: let
+        updaterPackage = self.packages.x86_64-linux.cloudflare-dns-updater;
+      in {
         environment.etc."cloudflare-dns-updater/config.toml".text = config.cloudflare-dns-updater.config;
 
         systemd.services.cloudflare-dns-updater = {
           description = "Cloudflare DNS Updater Service";
           wantedBy = [ "multi-user.target" ];
           serviceConfig = {
-            ExecStart = "${pkgs.cloudflare-dns-updater}/bin/cloudflare-dns-updater --configpath ${config.cloudflare-dns-updater.configPath}";
+            ExecStart = "${updaterPackage}/bin/cloudflare-dns-updater --configpath ${config.cloudflare-dns-updater.configPath}";
             Restart = "on-failure";
           };
           enabled = config.cloudflare-dns-updater.enable;
