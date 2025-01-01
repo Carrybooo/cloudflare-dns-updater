@@ -38,11 +38,19 @@
   };
 
   nixosModules.cloudflare-dns-updater = {
-    options.cloudflare-dns-updater.config = pkgs.lib.mkOption {
-      type = pkgs.lib.types.str;
-      default = "";
-      description = "The configuration for Cloudflare DNS Updater";
+    options.cloudflare-dns-updater = {
+      config = pkgs.lib.mkOption {
+        type = pkgs.lib.types.str;
+        default = "";
+        description = "The configuration for Cloudflare DNS Updater";
+      };
+      enable = pkgs.lib.mkOption {
+        type = pkgs.lib.types.bool;
+        default = false;
+        description = "Enable the Cloudflare DNS updater service.";
+      };
     };
+
 
     config = { config, pkgs, ... }: {
       environment.etc."cloudflare-dns-updater/config.toml".text = config.cloudflare-dns-updater.config;
