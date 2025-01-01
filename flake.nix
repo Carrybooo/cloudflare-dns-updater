@@ -44,6 +44,11 @@
         default = "";
         description = "The configuration for Cloudflare DNS Updater";
       };
+      configPath = pkgs.lib.mkOption {
+        type = pkgs.lib.types.str;
+        default = "/etc/cloudflare-dns-updater/config.toml";
+        description = "Path to the configuration file for Cloudflare DNS Updater.";
+      };
       enable = pkgs.lib.mkOption {
         type = pkgs.lib.types.bool;
         default = false;
@@ -59,7 +64,7 @@
         description = "Cloudflare DNS Updater Service";
         wantedBy = [ "multi-user.target" ];
         serviceConfig = {
-          ExecStart = "${pkgs.cloudflare-dns-updater}/bin/cloudflare-dns-updater --configpath /etc/cloudflare-dns-updater/config.toml";
+          ExecStart = "${pkgs.cloudflare-dns-updater}/bin/cloudflare-dns-updater --configpath ${config.cloudflare-dns-updater.configPath}";
           Restart = "on-failure";
         };
         enabled = config.cloudflare-dns-updater.enable;
