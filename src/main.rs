@@ -9,6 +9,7 @@ use serde_json::Value;
 use std::{
     env, fs,
     net::{Ipv4Addr, Ipv6Addr},
+    path::PathBuf,
     str::FromStr,
     thread, time,
 };
@@ -17,6 +18,8 @@ use std::{
 struct Args {
     #[arg(short, long, default_value_t = false)]
     debug: bool,
+    #[arg(long, default_value = "/etc/cloudflare-dns-updater/config.toml")]
+    configpath: PathBuf,
 }
 
 #[derive(Deserialize)]
@@ -45,11 +48,19 @@ async fn main() {
 
     let args = Args::parse();
 
-    let env_debug = env::var("DEBUG"); // handles DEBUG if set via env var
-
-    // set debug to true if either DEBUG env var or arg --debug is true
-    let debug: bool = if env_debug.is_ok() {
-        env_debug.unwrap().parse().unwrap()
+    // set debug to true if either DEBUG env var is true (or 1) or --debug is set
+    let debug: bool = if let Ok(env_debug) = env::var("DEBUG") {
+        match env_debug.to_lowercase().as_str() {
+            "true" | "1" => true,
+            "false" | "0" => false,
+            _ => {
+                warn!(
+                    "Invalid value for DEBUG environment variable: {}. Defaulting to false.",
+                    env_debug
+                );
+                false
+            }
+        }
     } else {
         args.debug
     };
@@ -61,10 +72,26 @@ async fn main() {
 
     env_logger::Builder::new().filter_level(level_filter).init();
 
-    // Load configuration from file
-    let mut config: Config =
-        toml::from_str(&fs::read_to_string("config.toml").expect("Failed to read config file"))
-            .expect("Failed to parse config file");
+    let mut config: Config;
+
+    // Load the config file
+    match fs::read_to_string(&args.configpath) {
+        Ok(config_content) => {
+            // Load configuration from file
+            config = toml::from_str(config_content.as_str()).expect(
+                format!("Failed to parse config file {}", args.configpath.display()).as_str(),
+            );
+            info!("Config loaded from: {}", args.configpath.display());
+        }
+        Err(err) => {
+            error!(
+                "Failed to load configuration file at {}: {}",
+                args.configpath.display(),
+                err
+            );
+            std::process::exit(1);
+        }
+    }
 
     loop {
         // Retrieve IPs using `public_ip` crate
@@ -159,12 +186,10 @@ async fn update_dns(
         .expect("Failed to list DNS records after retries");
 
     let get_records_text = get_records.text().await.unwrap();
-    // warn!("Records text : {:?}", get_records_text);
+    debug!("Records text : {:?}", get_records_text);
 
     let get_records_json: Value =
         serde_json::from_str(&get_records_text).expect("Failed to parse DNS records response");
-
-    // warn!("Records json : {:?}", get_records_json);
 
     if !get_records_json["success"].as_bool().unwrap_or(false) {
         error!(
@@ -213,6 +238,9 @@ async fn update_dns(
         .expect("Failed to send DNS update after retries");
 
     let update_response_text = update_response.text().await.unwrap();
+
+    debug!("Update response text : {:?}", update_response_text);
+
     let update_response_json: Value =
         serde_json::from_str(&update_response_text).expect("Failed to parse DNS update response");
 

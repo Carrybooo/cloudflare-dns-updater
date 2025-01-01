@@ -36,4 +36,26 @@
       };
     };
   };
+
+  nixosModules.cloudflare-dns-updater = {
+    options.cloudflare-dns-updater.config = pkgs.lib.mkOption {
+      type = pkgs.lib.types.str;
+      default = "";
+      description = "The configuration for Cloudflare DNS Updater";
+    };
+
+    config = { config, pkgs, ... }: {
+      environment.etc."cloudflare-dns-updater/config.toml".text = config.cloudflare-dns-updater.config;
+
+      systemd.services.cloudflare-dns-updater = {
+        description = "Cloudflare DNS Updater Service";
+        wantedBy = [ "multi-user.target" ];
+        serviceConfig = {
+          ExecStart = "${pkgs.cloudflare-dns-updater}/bin/cloudflare-dns-updater --configpath /etc/cloudflare-dns-updater/config.toml";
+          Restart = "on-failure";
+        };
+        enabled = config.cloudflare-dns-updater.enable;
+      };
+    };
+  };
 }
