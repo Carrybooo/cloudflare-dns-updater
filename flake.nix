@@ -10,7 +10,7 @@
       };
     in pkgs.rustPlatform.buildRustPackage rec {
       pname = "cloudflare-dns-updater";
-      version = "0.1.0";
+      version = "0.2.0";
 
       # Replace with your GitHub repo details
       src = pkgs.fetchFromGitHub {
@@ -27,7 +27,7 @@
         export PKG_CONFIG_PATH=${pkgs.openssl.dev}/lib/pkgconfig
       '';
 
-      cargoHash = "sha256-lW4pqPm79u4baoahVGjTw9dyc6bG3bSAj9hf0NZj+DY=";
+      cargoHash = "sha256-kw24pr0xzyOmAfh/2nHwWy7oCycdWUPf0MAsPeTxNx0=";
 
       meta = with pkgs.lib; {
         description = "A DNS updater written in Rust";
