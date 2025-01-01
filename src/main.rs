@@ -170,7 +170,11 @@ async fn update_dns(
 
     let client = Client::new();
 
-    let full_record_name = record_name.clone().to_lowercase() + "." + setup.domain.as_str();
+    let full_record_name = if record_name == "" || record_name == "@" {
+        setup.domain.clone()
+    } else {
+        format!("{}.{}", record_name.to_lowercase(), setup.domain)
+    };
     debug!("full_record_name = {}", full_record_name);
 
     // Step 1: List DNS records
