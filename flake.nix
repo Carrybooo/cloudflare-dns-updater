@@ -35,39 +35,44 @@
         license = licenses.mit;
       };
     };
-  };
 
-  nixosModules.cloudflare-dns-updater = {
-    options.cloudflare-dns-updater = {
-      config = pkgs.lib.mkOption {
-        type = pkgs.lib.types.str;
-        default = "";
-        description = "The configuration for Cloudflare DNS Updater";
-      };
-      configPath = pkgs.lib.mkOption {
-        type = pkgs.lib.types.str;
-        default = "/etc/cloudflare-dns-updater/config.toml";
-        description = "Path to the configuration file for Cloudflare DNS Updater.";
-      };
-      enable = pkgs.lib.mkOption {
-        type = pkgs.lib.types.bool;
-        default = false;
-        description = "Enable the Cloudflare DNS updater service.";
-      };
-    };
+    nixosModules.cloudflare-dns-updater = {
+      options = let
+        lib = nixpkgs.lib;
+      in{
+        cloudflare-dns-updater = {
+          enable = lib.mkOption {
+            type = lib.types.bool;
+            default = false;
+            description = "Enable the Cloudflare DNS updater service.";
+          };
 
+          config = lib.mkOption {
+            type = lib.types.str;
+            default = "";
+            description = "The configuration for Cloudflare DNS Updater.";
+          };
 
-    config = { config, pkgs, ... }: {
-      environment.etc."cloudflare-dns-updater/config.toml".text = config.cloudflare-dns-updater.config;
-
-      systemd.services.cloudflare-dns-updater = {
-        description = "Cloudflare DNS Updater Service";
-        wantedBy = [ "multi-user.target" ];
-        serviceConfig = {
-          ExecStart = "${pkgs.cloudflare-dns-updater}/bin/cloudflare-dns-updater --configpath ${config.cloudflare-dns-updater.configPath}";
-          Restart = "on-failure";
+          configPath = lib.mkOption {
+            type = lib.types.str;
+            default = "/etc/cloudflare-dns-updater/config.toml";
+            description = "Path to the configuration file for Cloudflare DNS Updater.";
+          };
         };
-        enabled = config.cloudflare-dns-updater.enable;
+      };
+
+      config = { config, pkgs, ... }: {
+        environment.etc."cloudflare-dns-updater/config.toml".text = config.cloudflare-dns-updater.config;
+
+        systemd.services.cloudflare-dns-updater = {
+          description = "Cloudflare DNS Updater Service";
+          wantedBy = [ "multi-user.target" ];
+          serviceConfig = {
+            ExecStart = "${pkgs.cloudflare-dns-updater}/bin/cloudflare-dns-updater --configpath ${config.cloudflare-dns-updater.configPath}";
+            Restart = "on-failure";
+          };
+          enabled = config.cloudflare-dns-updater.enable;
+        };
       };
     };
   };
