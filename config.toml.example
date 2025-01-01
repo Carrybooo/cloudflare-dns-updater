@@ -1,0 +1,15 @@
+# Global check interval (optional, defaults to 10 seconds)
+check_interval = 10
+
+[[setups]]
+domain = "my-domain.com"
+ipv4_record_name = "my_machine_v4_record"  # both v4 and v6 will be created/updated
+ipv6_record_name = "my_machine_v6_record"
+zone_id = "my_zone_id"
+api_token = "my_token"
+
+[[setups]]
+domain = "my-second-domain.com"
+ipv6_record_name = "backup-example" # only IPv6 here for example
+zone_id = "my_second_zone_id"
+api_token = "my_second_token"
