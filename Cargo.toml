@@ -1,5 +1,5 @@
 [package]
-name = "dns_update"
+name = "cloudflare_dns_updater"
 version = "0.1.0"
 edition = "2021"
 
