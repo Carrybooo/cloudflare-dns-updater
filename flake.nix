@@ -1,19 +1,41 @@
 {
-  description = "A cloudflare dns auto updater";
+  description = "A Cloudflare DNS updater written in Rust";
 
-  inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    flake-utils.url = "github:numtide/flake-utils";
+  };
 
-  outputs = { self, nixpkgs }:
+  outputs = { self, nixpkgs, flake-utils, ... }:
     let
-      supportedSystems = [ "x86_64-linux" ];
-      forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
-      pkgsFor = nixpkgs.legacyPackages;
-    in {
-      packages = forAllSystems (system: {
-        default = pkgsFor.${system}.callPackage ./default.nix { };
+      # Import the nixos module once, globally.
+      globalNixosModule = import ./module.nix;
+      perSystem = flake-utils.lib.eachDefaultSystem (system: let
+        pkgs = import nixpkgs { inherit system; };
+        lib = pkgs.lib;
+  
+        updaterPackage = import ./default.nix { inherit pkgs lib; };
+      in {
+        packages = {
+          default = updaterPackage;
+          cloudflare-dns-updater = updaterPackage;
+        };
+
+        apps = {
+          default = {
+            type = "app";
+            program = "${updaterPackage}/bin/cloudflare-dns-updater";
+          };
+        };
+
+        devShells = {
+          default = import ./devShell.nix { inherit pkgs lib; };
+        };
       });
-      devShells = forAllSystems (system: {
-        default = pkgsFor.${system}.callPackage ./shell.nix { };
-      });
+    in
+    perSystem // {
+      nixosModules = {
+        cloudflare-dns-updater = globalNixosModule;
+      };
     };
 }

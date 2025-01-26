@@ -1,33 +1,31 @@
-{ pkgs ? import <nixpkgs> { } }:
+{ pkgs, lib }:
 let
-  repo = pkgs.fetchFromGitHub {
-    owner = "Carrybooo";
-    repo = "cloudflare-dns-updater";
-    rev = "v0.2.0";
-    hash = "sha256-xkkboaq+SmM4Cx6NXU11ipawoqySD3atUhAPWNPc+oU=";
-  };
-  manifest = pkgs.lib.importTOML "${repo}/Cargo.toml";
+  manifest = lib.importTOML ./Cargo.toml;
 in
-pkgs.rustPlatform.buildRustPackage rec {
-  pname = manifest.package.name;
-  version = manifest.package.version;
+  pkgs.rustPlatform.buildRustPackage {
+    pname = manifest.package.name;
+    version = manifest.package.version;
 
-  src = repo;
+    src = pkgs.lib.cleanSource ./.;
 
-  cargoHash = "sha256-/X2mGbJge5khMiXu8SYFQarDSBCRbWX7GwkuAv2q0ow=";
+    cargoLock = {
+      lockFile = ./Cargo.lock;
+    };
 
-  nativeBuildInputs = with pkgs; [
-    pkg-config
-    openssl
-  ];
+    nativeBuildInputs = with pkgs; [
+      pkg-config
+      openssl
+    ];
 
-  preBuild = ''
-    export PKG_CONFIG_PATH=${pkgs.openssl.dev}/lib/pkgconfig
-  '';
+    preBuild = ''
+      export PKG_CONFIG_PATH=${pkgs.openssl.dev}/lib/pkgconfig
+    '';
 
-  meta = with pkgs.lib; {
-    description = "A DNS updater written in Rust";
-    homepage = "https://github.com/Carrybooo/cloudflare-dns-updater";
-    license = licenses.mit;
-  };
+    meta = with lib; {
+      description = "A Cloudflare DNS updater written in Rust";
+      homepage = "https://github.com/Carrybooo/cloudflare-dns-updater";
+      license = licenses.mit;
+      maintainers = [ "YourName" ];
+    };
 }
+
