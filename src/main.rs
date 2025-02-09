@@ -1,3 +1,5 @@
+mod get_stable_ipv6;
+
 use clap::Parser;
 use env_logger;
 use log::{debug, error, info, warn, LevelFilter};
@@ -96,7 +98,13 @@ async fn main() {
     loop {
         // Retrieve IPs using `public_ip` crate
         let ipv4 = public_ip::addr_v4().await;
-        let ipv6 = public_ip::addr_v6().await;
+        // Try fetching the "stable" ipv6 from network interfaces
+        // else retrieve the public one via `public_ip` crate
+        let ipv6 = if let Some(addr) = get_stable_ipv6::get_stable_ipv6() {
+            Some(addr)
+        } else {
+            public_ip::addr_v6().await
+        };
 
         // Ensure IPs are retrieved successfully
 

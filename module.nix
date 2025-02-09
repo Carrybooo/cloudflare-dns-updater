@@ -22,6 +22,8 @@ with lib;
       description = "Cloudflare DNS updater service";
       after = [ "network.target" ];
       wantedBy = [ "multi-user.target" ];
+      startLimitIntervalSec = 1;
+      startLimitBurst = 15;
       serviceConfig = {
         ExecStart = "${config.services.cloudflare-dns-updater.package}/bin/cloudflare-dns-updater --configpath ${config.services.cloudflare-dns-updater.configPath}";
         Restart = "always";
